@@ -45,7 +45,7 @@ Per raccogliere i dati dal sensore SwitchBot, è necessario ottenere una [chiave
         environment:
             TAP_TOKEN: your_api_key_here
     ```
-    Se vuoi usare un'altra marca o modello di sensore, dovrai modificare il file di configurazione di Logstash (`logstash/config/logstash.conf`) per adattarlo alla nuova sorgente dati. Assicurati che i dati inviati a Kafka includano i campi:
+    Se vuoi usare un'altra marca o modello di sensore, dovrai modificare il file di configurazione di Logstash (`logstash/config/logstash.conf`) per adattarlo alla nuova sorgente dati ([Vedi sezione `Home Assistant`](#home-assistant)). Assicurati che i dati inviati a Kafka includano i campi:
     * `Timestamp`
     * `Temperature_Celsius`
     * `Relative_Humidity`
@@ -76,6 +76,36 @@ Per raccogliere i dati dal sensore SwitchBot, è necessario ottenere una [chiave
     <img src="Img/Dashbord/Tre anni.png" width="700" style="height:auto;" />
 </p>
 
+### Home Assistant
+Come accennato nella sezione relativa alla configurazione dell'API SwitchBot, è possibile modificare il file di configurazione di Logstash per cambiare la sorgente dei dati in tempo reale. Questo è utile nel caso in cui non si voglia utilizzare il sensore adoperato per il progetto **MATE** o si preferisca evitare di dipendere da un servizio cloud.
+
+Per questo motivo, voglio illustrare la configurazione utilizzando **Home Assistant**, una soluzione che garantisce sia la flessibilità nell'uso di diversi sensori, sia la possibilità di mantenere i dati localmente, senza affidarli a servizi di terze parti.
+1. **API Home Assistant**  
+   Per prima cosa, è necessario creare un token di accesso a lungo termine per Home Assistant. Per farlo, recati alla seguente pagina:  
+   ```arduino
+   http://IP_Home_Assistant:8123/profile/security 
+   ```
+   Scorri fino in fondo alla pagina e crea il token di accesso a lungo termine. **Ricorda** che, una volta creato, non sarà più possibile visualizzarlo, quindi assicurati di salvarlo in un luogo sicuro.
+
+2. **Modifica del file di configurazione di Logstash**  
+   Dopo aver ottenuto il token, modifica la sezione `input` del file di configurazione di Logstash, specificando il campo `urls` come segue:
+   
+    ```yaml
+     urls => {
+      test1 => {
+        method => post
+        url => "http://IP_Home_Assistant:8123/api/template"
+        headers => {
+          "Authorization" => "Bearer ${TAP_TOKEN}"
+          "Content-Type" => "application/json"
+        }
+        body => '{
+          "template": "{ \"body\": { \"temperature\": \"{{ states.sensor.meter_7cb8.state }}\", \"humidity\": \"{{ states.sensor.meter_7cb8_umidita.state }}\" } }"
+        }'
+      }
+    }
+   ```
+    Ovviamente, adatta la tua configurazione in base ai nomi dei sensori che possiedi
 
 ## Autore
 Progetto **MATE** è concesso in licenza [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1)© di Marco Agatello 
